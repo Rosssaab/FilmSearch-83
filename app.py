@@ -34,6 +34,7 @@ token_expiration_time = 0
 def get_spotify_token():
     global spotify_token, token_expiration_time
     
+    # Check if we have a valid token
     if spotify_token and time.time() < token_expiration_time:
         return spotify_token
 
@@ -50,21 +51,14 @@ def get_spotify_token():
     
     try:
         response = requests.post(url, headers=headers, data=data)
-        logger.debug(f"Token request status code: {response.status_code}")
-        logger.debug(f"Token request response: {response.text}")
         response.raise_for_status()
         json_result = response.json()
         
-        if 'access_token' not in json_result:
-            logger.error(f"Access token not found in response. Response: {json_result}")
-            raise ValueError("Access token not found in Spotify API response")
-        
         spotify_token = json_result["access_token"]
-        token_expiration_time = time.time() + json_result.get("expires_in", 3600)
+        token_expiration_time = time.time() + json_result.get("expires_in", 3600) - 300  # Subtract 5 minutes for safety
         return spotify_token
     except requests.exceptions.RequestException as e:
         logger.error(f"Error obtaining Spotify access token: {e}")
-        logger.error(f"Response content: {e.response.text if e.response else 'No response content'}")
         raise
 
 @app.route('/', methods=['GET', 'POST'])
@@ -96,8 +90,6 @@ def index():
                 "Authorization": f"Bearer {token}"
             }
             response = requests.get(url, headers=headers)
-            logger.debug(f"Search request status code: {response.status_code}")
-            logger.debug(f"Search request response: {response.text[:200]}...")  # Log first 200 characters
             response.raise_for_status()
             data = response.json()
 
@@ -120,4 +112,4 @@ def themed_index(theme):
 if __name__ == '__main__':
     from waitress import serve
     print("Starting server on http://localhost:8080")
-    serve(app, host='127.0.0.1', port=8080)
+    serve(app, host='127.0.0.1', port=8082)
