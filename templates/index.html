@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song Search</title>
+    <link id="theme-link" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/darkly/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .modal-fullscreen {
+            padding: 0 !important;
+        }
+        .modal-fullscreen .modal-dialog {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            max-width: none;
+        }
+        .modal-fullscreen .modal-content {
+            height: 100%;
+            border: 0;
+            border-radius: 0;
+        }
+        .modal-fullscreen .modal-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            overflow: hidden;
+        }
+        .modal-fullscreen .modal-body img {
+            width: auto;
+            max-width: 100%;
+            height: calc(100% - 60px);
+            object-fit: contain;
+        }
+        .modal-fullscreen .buy-button {
+            width: auto;
+            padding: 15px 30px;
+            margin-top: 10px;
+        }
+        .search-container {
+            transition: all 0.5s ease-in-out;
+            overflow: hidden;
+        }
+        .search-container.collapsed {
+            display: none;
+        }
+        #searchButton, #clearButton, #resetButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            min-width: 120px;
+        }
+        #resetButton {
+            white-space: nowrap;
+        }
+        .read-more, .read-less {
+            color: #007bff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .read-more:hover, .read-less:hover {
+            text-decoration: underline;
+        }
+        .album-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+        .play-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .album-image-container:hover .play-button {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a href="http://mywebstuff.co.uk" class="btn btn-secondary me-2">Back to My Web Stuff</a>
+            <span class="navbar-brand mx-auto">Song Search</span>
+            <select id="theme-select" class="form-select" style="width: auto;">
+                        <option value="default">Default</option>
+                        <option value="cyborg">Cyborg</option>
+                        <option value="darkly" selected>Darkly</option>
+                        <option value="lumen">Lumen</option>
+                        <option value="minty">Minty</option>
+                        <option value="pulse">Pulse</option>
+                        <option value="sandstone">Sandstone</option>
+                        <option value="solar">Solar</option>
+            </select>
+        </div>
+    </nav>
+
+    <div id="searchContainer" class="container mt-3 search-container">
+        <h3 class="mb-3">Song Search</h3>
+        <div id="searchBox">
+            {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endif %}
+            <form method="POST" id="searchForm">
+                <div class="mb-3">
+                    <label for="track" class="form-label">Track</label>
+                    <input type="text" class="form-control" id="track" name="track" placeholder="Enter song title">
+                </div>
+                <div class="mb-3">
+                    <label for="artist" class="form-label">Artist</label>
+                    <input type="text" class="form-control" id="artist" name="artist" placeholder="Enter artist name">
+                </div>
+                <div class="mb-3">
+                    <label for="album" class="form-label">Album</label>
+                    <input type="text" class="form-control" id="album" name="album" placeholder="Enter album name">
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary" id="searchButton">Search</button>
+                    <button type="button" class="btn btn-secondary" id="clearButton" style="display: none;">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if songs %}
+        <div id="searchResults" class="container mt-5">
+            <h2 class="mb-4">Search Results</h2>
+            <div class="row">
+                {% for song in songs %}
+                    <div class="col-12 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="row g-0">
+                                <div class="col-md-4 position-relative">
+                                    {% if song.album.images %}
+                                        <div class="album-image-container">
+                                            <img src="{{ song.album.images[0].url }}" class="img-fluid rounded-start album-image" alt="{{ song.name }}" data-bs-toggle="modal" data-bs-target="#songModal{{ loop.index }}">
+                                            <button class="btn btn-primary play-button" onclick="playSong('{{ song.preview_url }}')">
+                                                <i class="bi bi-play-fill"></i> Play Preview
+                                            </button>
+                                        </div>
+                                    {% else %}
+                                        <div class="bg-secondary text-white d-flex justify-content-center align-items-center" style="height: 300px;">
+                                            <span>No Image Available</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ song.name }}</h5>
+                                        <p class="card-text">
+                                            <strong>Artist(s):</strong> {{ song.artists|map(attribute='name')|join(', ') }}<br>
+                                            <strong>Album:</strong> {{ song.album.name }}<br>
+                                            <strong>Release Date:</strong> {{ song.album.release_date }}
+                                        </p>
+                                        {% if song.external_urls.spotify %}
+                                            <a href="{{ song.external_urls.spotify }}" class="btn btn-success btn-sm" target="_blank">Open in Spotify</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal for each song -->
+                    <div class="modal fade modal-fullscreen" id="songModal{{ loop.index }}" tabindex="-1" aria-labelledby="songModalLabel{{ loop.index }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-body">
+                                    {% if song.album.images %}
+                                        <img src="{{ song.album.images[0].url }}" class="img-fluid" alt="{{ song.name }}">
+                                    {% endif %}
+                                    <a href="{{ song.external_urls.spotify }}" class="btn btn-success btn-lg buy-button" target="_blank">Open in Spotify</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <button id="resetButton" class="btn btn-primary position-fixed" style="display: none; bottom: 20px; right: 20px; z-index: 1000;">
+        Search Again
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var searchForm = document.getElementById('searchForm');
+        var searchContainer = document.getElementById('searchContainer');
+        var searchResults = document.getElementById('searchResults');
+        var resetButton = document.getElementById('resetButton');
+        var searchButton = document.getElementById('searchButton');
+        var clearButton = document.getElementById('clearButton');
+        var themeSelect = document.getElementById('theme-select');
+        var themeLink = document.getElementById('theme-link');
+        var inputFields = document.querySelectorAll('#searchForm input[type="text"]');
+
+        function showSearchForm() {
+            searchContainer.classList.remove('collapsed');
+            if (searchResults) searchResults.style.display = 'none';
+            resetButton.style.display = 'none';
+        }
+
+        function showSearchResults() {
+            searchContainer.classList.add('collapsed');
+            if (searchResults) searchResults.style.display = 'block';
+            resetButton.style.display = 'block';
+        }
+
+        if (searchForm && searchResults) {
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                fetch(searchForm.action, {
+                    method: searchForm.method,
+                    body: new FormData(searchForm)
+                })
+                .then(response => response.text())
+                .then(html => {
+                    var tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+
+                    var newSearchResults = tempDiv.querySelector('#searchResults');
+                    if (newSearchResults) {
+                        searchResults.innerHTML = newSearchResults.innerHTML;
+                    }
+
+                    showSearchResults();
+
+                    attachModalCloseListeners();
+                });
+            });
+        }
+
+        if (searchResults && searchResults.children.length > 0) {
+            showSearchResults();
+        }
+
+        attachModalCloseListeners();
+
+        if (resetButton) {
+            resetButton.addEventListener('click', showSearchForm);
+        }
+
+        function toggleClearButton() {
+            var hasText = Array.from(inputFields).some(input => input.value.trim() !== '');
+            clearButton.style.display = hasText ? 'inline-block' : 'none';
+
+            // Adjust the search button's position
+            searchButton.style.marginRight = hasText ? '10px' : '0';
+        }
+
+        inputFields.forEach(function(input) {
+            input.addEventListener('input', toggleClearButton);
+        });
+
+        if (clearButton) {
+            clearButton.addEventListener('click', function() {
+                inputFields.forEach(function(input) {
+                    input.value = '';
+                });
+                toggleClearButton();
+            });
+        }
+
+        // Initial check
+        toggleClearButton();
+
+        if (searchButton && clearButton) {
+            var maxWidth = Math.max(searchButton.offsetWidth, clearButton.offsetWidth);
+            searchButton.style.width = maxWidth + 'px';
+            clearButton.style.width = maxWidth + 'px';
+        }
+
+        if (themeSelect && themeLink) {
+            themeSelect.addEventListener('change', function() {
+                var selectedTheme = this.value;
+                if (selectedTheme === 'default') {
+                    selectedTheme = 'darkly';
+                }
+                themeLink.href = `https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/${selectedTheme}/bootstrap.min.css`;
+            });
+
+            var currentTheme = themeLink.href.split('/').slice(-2)[0];
+            themeSelect.value = currentTheme === 'darkly' ? 'default' : currentTheme;
+        }
+
+        // Read more/less functionality
+        document.querySelectorAll('.read-more, .read-less').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                var cardText = this.closest('.card-text');
+                var shortDesc = cardText.querySelector('.short-description');
+                var fullDesc = cardText.querySelector('.full-description');
+                var readMore = cardText.querySelector('.read-more');
+                var readLess = cardText.querySelector('.read-less');
+
+                if (this.classList.contains('read-more')) {
+                    shortDesc.style.display = 'none';
+                    fullDesc.style.display = 'inline';
+                    readMore.style.display = 'none';
+                    readLess.style.display = 'inline';
+                } else {
+                    shortDesc.style.display = 'inline';
+                    fullDesc.style.display = 'none';
+                    readMore.style.display = 'inline';
+                    readLess.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    function attachModalCloseListeners() {
+        document.querySelectorAll('.modal-fullscreen').forEach(function(modal) {
+            modal.addEventListener('click', function(event) {
+                var buyButton = this.querySelector('.buy-button');
+                if (buyButton && !buyButton.contains(event.target)) {
+                    var modalInstance = bootstrap.Modal.getInstance(this);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                }
+            });
+        });
+    }
+
+    function playSong(previewUrl) {
+        if (previewUrl) {
+            new Audio(previewUrl).play();
+        } else {
+            alert('No preview available for this song.');
+        }
+    }
+    </script>
+</body>
+</html>
