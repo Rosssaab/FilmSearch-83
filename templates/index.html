@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Song Search</title>
-    <link id="theme-link" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/darkly/bootstrap.min.css" rel="stylesheet">
+    <link id="theme-link" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/solar/bootstrap.min.css" rel="stylesheet">
     <style>
         .modal-fullscreen {
             padding: 0 !important;
@@ -68,14 +68,6 @@
             height: 300px;
             object-fit: cover;
         }
-        .play-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
         .album-image-container:hover .play-button {
             opacity: 1;
         }
@@ -89,12 +81,12 @@
             <select id="theme-select" class="form-select" style="width: auto;">
                         <option value="default">Default</option>
                         <option value="cyborg">Cyborg</option>
-                        <option value="darkly" selected>Darkly</option>
+                        <option value="darkly">Darkly</option>
                         <option value="lumen">Lumen</option>
                         <option value="minty">Minty</option>
                         <option value="pulse">Pulse</option>
                         <option value="sandstone">Sandstone</option>
-                        <option value="solar">Solar</option>
+                        <option value="solar" selected>Solar</option>
             </select>
         </div>
     </nav>
@@ -140,9 +132,6 @@
                                     {% if song.album.images %}
                                         <div class="album-image-container">
                                             <img src="{{ song.album.images[0].url }}" class="img-fluid rounded-start album-image" alt="{{ song.name }}" data-bs-toggle="modal" data-bs-target="#songModal{{ loop.index }}">
-                                            <button class="btn btn-primary play-button" onclick="playSong('{{ song.preview_url }}')">
-                                                <i class="bi bi-play-fill"></i> Play Preview
-                                            </button>
                                         </div>
                                     {% else %}
                                         <div class="bg-secondary text-white d-flex justify-content-center align-items-center" style="height: 300px;">
@@ -283,13 +272,13 @@
             themeSelect.addEventListener('change', function() {
                 var selectedTheme = this.value;
                 if (selectedTheme === 'default') {
-                    selectedTheme = 'darkly';
+                    selectedTheme = 'solar';
                 }
                 themeLink.href = `https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/${selectedTheme}/bootstrap.min.css`;
             });
 
             var currentTheme = themeLink.href.split('/').slice(-2)[0];
-            themeSelect.value = currentTheme === 'darkly' ? 'default' : currentTheme;
+            themeSelect.value = currentTheme === 'solar' ? 'default' : currentTheme;
         }
 
         // Read more/less functionality
@@ -329,22 +318,6 @@
                 }
             });
         });
-    }
-
-    function playSong(previewUrl) {
-        if (previewUrl) {
-            console.log("Attempting to play:", previewUrl);
-            const audio = new Audio(previewUrl);
-            audio.play().then(() => {
-                console.log("Playback started successfully");
-            }).catch((error) => {
-                console.error("Error playing audio:", error);
-                alert('Error playing preview: ' + error.message);
-            });
-        } else {
-            console.log("No preview URL available");
-            alert('No preview available for this song.');
-        }
     }
     </script>
 </body>
