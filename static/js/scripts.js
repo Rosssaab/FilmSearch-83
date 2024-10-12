@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         attachTrailerListeners();
+        attachReadMoreListeners();
     }
 
     function handleSearch(e) {
@@ -97,6 +98,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createMovieCard(movie) {
         // ... (keep the existing createMovieCard function)
+
+        var overviewHtml = '';
+        if (movie.overview.length > 200) {
+            overviewHtml = `
+                <span class="short-description">
+                    ${movie.overview.slice(0, 200)}...
+                </span>
+                <span class="full-description" style="display: none;">
+                    ${movie.overview}
+                </span>
+                <a href="#" class="read-more">Read more</a>
+                <a href="#" class="read-less" style="display: none;">Read less</a>
+            `;
+        } else {
+            overviewHtml = movie.overview;
+        }
+
+        // Use overviewHtml in your card template
+        // ... (update the rest of the function accordingly)
     }
 
     function attachTrailerListeners() {
@@ -137,6 +157,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             console.log('Trailer modal not found'); // Debug log
+        }
+    }
+
+    function attachReadMoreListeners() {
+        document.querySelectorAll('.read-more, .read-less').forEach(function(link) {
+            link.addEventListener('click', handleReadMoreClick);
+        });
+    }
+
+    function handleReadMoreClick(event) {
+        event.preventDefault(); // Prevent default anchor behavior
+        var descriptionContainer = this.closest('p');
+        var shortDescription = descriptionContainer.querySelector('.short-description');
+        var fullDescription = descriptionContainer.querySelector('.full-description');
+        var readMoreLink = descriptionContainer.querySelector('.read-more');
+        var readLessLink = descriptionContainer.querySelector('.read-less');
+
+        if (this.classList.contains('read-more')) {
+            shortDescription.style.display = 'none';
+            fullDescription.style.display = 'inline';
+            readMoreLink.style.display = 'none';
+            readLessLink.style.display = 'inline';
+        } else {
+            shortDescription.style.display = 'inline';
+            fullDescription.style.display = 'none';
+            readMoreLink.style.display = 'inline';
+            readLessLink.style.display = 'none';
         }
     }
 
