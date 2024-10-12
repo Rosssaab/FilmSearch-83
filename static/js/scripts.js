@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
             resetButton.addEventListener('click', resetSearch);
         }
 
-        // Attach other event listeners (e.g., for trailer buttons)
         attachTrailerListeners();
     }
 
@@ -33,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(html => {
             console.log("Response received");  // Debug log
             document.body.innerHTML = html;
-            attachEventListeners();
+            attachEventListeners(); // Re-attach event listeners after content update
             toggleResetButton();
         })
         .catch(error => {
@@ -102,24 +101,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function attachTrailerListeners() {
         document.querySelectorAll('.watch-trailer').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var trailerKey = this.getAttribute('data-trailer-key');
-                var trailerModal = document.getElementById('trailerModal');
-                var iframe = trailerModal.querySelector('iframe');
-                if (trailerKey) {
-                    iframe.src = `https://www.youtube.com/embed/${trailerKey}`;
-                    console.log('Setting iframe src to:', iframe.src); // Debug log
-                } else {
-                    console.log('No trailer key found'); // Debug log
-                }
-            });
+            // Remove any existing event listeners to prevent duplicates
+            button.removeEventListener('click', handleTrailerClick);
+            button.addEventListener('click', handleTrailerClick);
         });
 
         var trailerModal = document.getElementById('trailerModal');
-        trailerModal.addEventListener('hidden.bs.modal', function () {
-            var iframe = this.querySelector('iframe');
-            iframe.src = '';
-        });
+        if (trailerModal) {
+            // Initialize the modal if it hasn't been already
+            if (!trailerModal.classList.contains('bs-modal')) {
+                new bootstrap.Modal(trailerModal);
+            }
+            trailerModal.addEventListener('hidden.bs.modal', function () {
+                var iframe = this.querySelector('iframe');
+                if (iframe) {
+                    iframe.src = '';
+                }
+            });
+        }
+    }
+
+    function handleTrailerClick(event) {
+        event.preventDefault(); // Prevent default button behavior
+        var trailerKey = this.getAttribute('data-trailer-key');
+        var trailerModal = document.getElementById('trailerModal');
+        if (trailerModal) {
+            var modalInstance = bootstrap.Modal.getInstance(trailerModal) || new bootstrap.Modal(trailerModal);
+            var iframe = trailerModal.querySelector('iframe');
+            if (iframe && trailerKey) {
+                iframe.src = `https://www.youtube.com/embed/${trailerKey}`;
+                console.log('Setting iframe src to:', iframe.src); // Debug log
+                modalInstance.show(); // Manually show the modal
+            } else {
+                console.log('No trailer key found or iframe not present'); // Debug log
+            }
+        } else {
+            console.log('Trailer modal not found'); // Debug log
+        }
     }
 
     // Initial attachment of event listeners
