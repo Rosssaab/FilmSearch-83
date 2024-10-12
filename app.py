@@ -44,12 +44,12 @@ def search_person(name):
         logger.error(f"Error searching for person: {e}")
         raise
 
-def search_movies(title, year=None, person=None):
+def search_movies(title, year=None, person=None, page=1):
     endpoint = f"{TMDB_BASE_URL}/search/movie"
     params = {
         "api_key": TMDB_API_KEY,
         "language": "en-US",
-        "page": 1,
+        "page": page,
         "include_adult": "false"
     }
 
@@ -62,21 +62,20 @@ def search_movies(title, year=None, person=None):
         if person:
             person_id = search_person(person)
             if person_id:
-                # If searching by person, use the discover endpoint instead
                 endpoint = f"{TMDB_BASE_URL}/discover/movie"
                 params["with_cast"] = person_id
                 params["sort_by"] = "popularity.desc"
             else:
-                logger.debug(f"No person found for: {person}")
+                print(f"No person found for: {person}")
 
-        logger.debug(f"Sending request to TMDb API with params: {params}")
+        print(f"Sending request to TMDb API with params: {params}")
         response = requests.get(endpoint, params=params)
         response.raise_for_status()
         data = response.json()
-        logger.debug(f"Received response from TMDb API: {data}")
+        print(f"Received response from TMDb API: {data}")
         return data
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error searching for movies: {e}")
+        print(f"Error searching for movies: {e}")
         raise
 
 def get_movie_videos(movie_id):
@@ -109,25 +108,25 @@ def index():
             year = request.form.get('year', '').strip()
             person = request.form.get('person', '').strip()
 
+            print(f"Searching for - Title: {title}, Year: {year}, Person: {person}")  # Debug log
+
             if not (title or year or person):
                 error = "Please enter at least one search criteria."
             else:
-                logger.debug(f"Searching for movies with title: {title}, year: {year}, person: {person}")
-
                 data = search_movies(title=title, year=year, person=person)
 
                 if 'results' in data and data['results']:
                     movies = data['results']
                     total_pages = data.get('total_pages', 0)
-                    logger.debug(f"Found {len(movies)} movies, total pages: {total_pages}")
+                    print(f"Found {len(movies)} movies, total pages: {total_pages}")  # Debug log
                     for movie in movies:
                         movie['trailer_key'] = get_movie_videos(movie['id'])
                 else:
                     error = "No movies found matching your criteria."
-                    logger.debug("No movies found in the API response")
+                    print("No movies found")  # Debug log
 
         except Exception as e:
-            logger.exception(f"An error occurred during search: {str(e)}")
+            print(f"Error during search: {str(e)}")  # Debug log
             error = f"An error occurred: {str(e)}"
 
     return render_template('index.html', movies=movies, error=error, theme=theme, total_pages=total_pages)
@@ -139,18 +138,27 @@ def load_more():
     year = request.form.get('year', '')
     person = request.form.get('person', '')
 
-    data = search_movies(title=title, year=year, person=person, page=page)
+    print(f"Load More: Page {page}, Title: {title}, Year: {year}, Person: {person}")  # Debug log
 
-    if 'results' in data and data['results']:
-        movies = data['results']
-        for movie in movies:
-            movie['trailer_key'] = get_movie_videos(movie['id'])
-        return jsonify({
-            'movies': movies,
-            'total_pages': data.get('total_pages', 0)
-        })
-    else:
-        return jsonify({'error': 'No more movies found'}), 404
+    try:
+        data = search_movies(title=title, year=year, person=person, page=page)
+        
+        if 'results' in data and data['results']:
+            movies = data['results']
+            for movie in movies:
+                movie['trailer_key'] = get_movie_videos(movie['id'])
+            
+            print(f"Returning {len(movies)} movies, total pages: {data.get('total_pages', 0)}")  # Debug log
+            return jsonify({
+                'movies': movies,
+                'total_pages': data.get('total_pages', 0)
+            })
+        else:
+            print("No more movies found")  # Debug log
+            return jsonify({'error': 'No more movies found'}), 404
+    except Exception as e:
+        print(f"Error in load_more: {str(e)}")  # Debug log
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/<theme>')
 def themed_index(theme):
