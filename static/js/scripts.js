@@ -1,3 +1,24 @@
+const loadingSpinner = document.getElementById('loadingSpinner');
+const searchForm = document.getElementById('searchForm');
+
+// Show spinner when form is submitted
+searchForm.addEventListener('submit', function() {
+    loadingSpinner.style.display = 'block';
+    searchBox.style.opacity = '0.5';
+});
+
+// For the load more functionality, add spinner control
+document.getElementById('loadMoreBtn')?.addEventListener('click', function() {
+    loadingSpinner.style.display = 'block';
+    // ... existing load more code ...
+});
+
+// Add to your AJAX success/error handlers
+function hideSpinner() {
+    loadingSpinner.style.display = 'none';
+    searchBox.style.opacity = '1';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     var searchForm = document.getElementById('searchForm');
     var searchResults = document.getElementById('searchResults');
@@ -35,9 +56,11 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.innerHTML = html;
             attachEventListeners(); // Re-attach event listeners after content update
             toggleResetButton();
+            hideSpinner();
         })
         .catch(error => {
             console.error('Error:', error);
+            hideSpinner();
         });
     }
 
@@ -73,10 +96,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("No more movies found");  // Debug log
                 loadMoreBtn.style.display = 'none';
             }
+            hideSpinner();
         })
         .catch(error => {
             console.error('Error:', error);
             loadMoreBtn.style.display = 'none';
+            hideSpinner();
         });
     }
 
